@@ -15,7 +15,7 @@
     <!-- HERO SECTION -->
     <section class="header">
         <nav>
-            <a href="index.html"><img src="assets/images/logo.png" alt="InfoHive Logo" /></a>
+            <a href="index.html"><img src="assets/images/Logo.png" alt="InfoHive Logo" /></a>
             <div class="nav-links" id="navLinks">
                 <i class="fa fa-times" onclick="hideMenu()"></i>
                 <ul>
@@ -43,15 +43,51 @@
             <a href="announcements.html" class="view-all">View All Announcements</a>
         </div>
         <div class="row" id="announcements-container">
-            <!-- Announcements will be loaded here -->
+            <!-- Sample announcements for fallback -->
+            <div class="col">
+                <h3>Course Registration Extended</h3>
+                <p>The deadline for course registration has been extended to Friday, September 15th. Please ensure you complete your registration before the new deadline.</p>
+            </div>
+            <div class="col">
+                <h3>Library Hours Update</h3>
+                <p>The library will now be open 24/7 during exam periods. Additional study spaces have been made available on the 3rd floor.</p>
+            </div>
+            <div class="col">
+                <h3>Department Meeting</h3>
+                <p>All students are invited to attend the department meeting on September 20th at 2:00 PM in the main auditorium. Important updates will be shared.</p>
+            </div>
         </div>
     </section>
 
-    <!-- Events Section -->
+    <!-- Event Calendar Section -->
     <section class="section">
-        <h1>Upcoming Events</h1>
-        <div class="row" id="events-container">
-            <!-- Events will be loaded here -->
+        <div class="announcements-header">
+            <h1>Event Calendar</h1>
+            <a href="events.html" class="view-all">View All Events</a>
+        </div>
+        <div class="calendar-container">
+            <div class="calendar-header">
+                <button class="nav-btn" id="prev-month">&lt;</button>
+                <h2 id="current-month-year"></h2>
+                <button class="nav-btn" id="next-month">&gt;</button>
+            </div>
+            <div class="calendar">
+                <div class="calendar-days">
+                    <div class="day-header">Sun</div>
+                    <div class="day-header">Mon</div>
+                    <div class="day-header">Tue</div>
+                    <div class="day-header">Wed</div>
+                    <div class="day-header">Thu</div>
+                    <div class="day-header">Fri</div>
+                    <div class="day-header">Sat</div>
+                </div>
+                <div class="calendar-dates" id="calendar-dates">
+                    <!-- Calendar dates will be generated here -->
+                </div>
+            </div>
+        </div>
+        <div class="events-list" id="events-list">
+            <!-- Selected day's events will be displayed here -->
         </div>
     </section>
 
@@ -93,21 +129,101 @@
                     });
                 });
 
+            // Calendar functionality
+            let currentDate = new Date();
+            let eventsData = [];
+
+            // Fetch events for calendar
             fetch('/api/events')
                 .then(response => response.json())
                 .then(data => {
-                    const container = document.getElementById('events-container');
-                    data.slice(0, 3).forEach(event => {
-                        const col = document.createElement('div');
-                        col.classList.add('col');
-                        col.innerHTML = `
-                            <h3>${event.title}</h3>
-                            <p>${event.description}</p>
-                            <p>Date: ${new Date(event.date).toLocaleDateString()}</p>
-                        `;
-                        container.appendChild(col);
-                    });
+                    eventsData = data;
+                    generateCalendar(currentDate.getFullYear(), currentDate.getMonth());
                 });
+
+            function generateCalendar(year, month) {
+                const firstDay = new Date(year, month, 1);
+                const lastDay = new Date(year, month + 1, 0);
+                const startDate = new Date(firstDay);
+                const endDate = new Date(lastDay);
+                
+                // Adjust to show full weeks
+                startDate.setDate(startDate.getDate() - startDate.getDay());
+                endDate.setDate(endDate.getDate() + (6 - endDate.getDay()));
+
+                const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                    'July', 'August', 'September', 'October', 'November', 'December'];
+                
+                document.getElementById('current-month-year').textContent = `${monthNames[month]} ${year}`;
+                
+                const calendarDates = document.getElementById('calendar-dates');
+                calendarDates.innerHTML = '';
+
+                let currentDateIter = new Date(startDate);
+                while (currentDateIter <= endDate) {
+                    const dateDiv = document.createElement('div');
+                    dateDiv.classList.add('calendar-date');
+                    
+                    const isCurrentMonth = currentDateIter.getMonth() === month;
+                    const isToday = currentDateIter.toDateString() === new Date().toDateString();
+                    
+                    if (!isCurrentMonth) {
+                        dateDiv.classList.add('other-month');
+                    }
+                    if (isToday) {
+                        dateDiv.classList.add('today');
+                    }
+
+                    // Check for events on this date
+                    const dateStr = currentDateIter.toISOString().split('T')[0];
+                    const dayEvents = eventsData.filter(event => event.date === dateStr);
+                    
+                    if (dayEvents.length > 0) {
+                        dateDiv.classList.add('has-events');
+                    }
+
+                    dateDiv.innerHTML = `
+                        <span class="date-number">${currentDateIter.getDate()}</span>
+                        ${dayEvents.length > 0 ? `<div class="event-indicator">${dayEvents.length}</div>` : ''}
+                    `;
+                    
+                    dateDiv.addEventListener('click', () => showEventsForDate(dateStr, dayEvents));
+                    calendarDates.appendChild(dateDiv);
+                    
+                    currentDateIter.setDate(currentDateIter.getDate() + 1);
+                }
+            }
+
+            function showEventsForDate(date, events) {
+                const eventsList = document.getElementById('events-list');
+                
+                if (events.length === 0) {
+                    eventsList.innerHTML = `<p class="no-events">No events scheduled for ${new Date(date).toLocaleDateString()}</p>`;
+                    return;
+                }
+
+                eventsList.innerHTML = `
+                    <h3>Events for ${new Date(date).toLocaleDateString()}</h3>
+                    ${events.map(event => `
+                        <div class="event-card">
+                            <h4>${event.title}</h4>
+                            <p>${event.description}</p>
+                            ${event.image ? `<img src="${event.image}" alt="${event.title}" class="event-image">` : ''}
+                        </div>
+                    `).join('')}
+                `;
+            }
+
+            // Navigation buttons
+            document.getElementById('prev-month').addEventListener('click', () => {
+                currentDate.setMonth(currentDate.getMonth() - 1);
+                generateCalendar(currentDate.getFullYear(), currentDate.getMonth());
+            });
+
+            document.getElementById('next-month').addEventListener('click', () => {
+                currentDate.setMonth(currentDate.getMonth() + 1);
+                generateCalendar(currentDate.getFullYear(), currentDate.getMonth());
+            });
         });
 
         var navLinks = document.getElementById("navLinks");
