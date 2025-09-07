@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Dashboard | InfoHive</title>
+    <link rel="icon" type="image/png" href="assets/images/Logo.png">
+    <link rel="stylesheet" href="assets/css/style.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+    <section class="admin-header">
+        <nav>
+            <a href="index.html"><img src="assets/images/logo.png" alt="InfoHive Logo" /></a>
+            <div class="nav-links">
+                <ul>
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="#" onclick="logout()">Logout</a></li>
+                </ul>
+            </div>
+        </nav>
+    </section>
+    <section class="dashboard">
+        <h2>Admin Dashboard</h2>
+
+        <!-- Announcements Management -->
+        <div class="form-section">
+            <h3>Manage Announcements</h3>
+            <form id="announcement-form">
+                <input type="hidden" id="announcement-id">
+                <input type="text" id="announcement-title" placeholder="Title" required />
+                <textarea id="announcement-content" placeholder="Content" rows="5" required></textarea>
+                <button type="submit">Save Announcement</button>
+            </form>
+        </div>
+        <div class="item-list" id="announcements-list">
+            <h3>Existing Announcements</h3>
+        </div>
+
+        <!-- Events Management -->
+        <div class="form-section">
+            <h3>Manage Events</h3>
+            <form id="event-form">
+                <input type="hidden" id="event-id">
+                <input type="text" id="event-title" placeholder="Title" required />
+                <textarea id="event-description" placeholder="Description" rows="5" required></textarea>
+                <input type="date" id="event-date" required />
+                <input type="text" id="event-image" placeholder="Image URL" />
+                <button type="submit">Save Event</button>
+            </form>
+        </div>
+        <div class="item-list" id="events-list">
+            <h3>Existing Events</h3>
+        </div>
+
+        <!-- Calendar -->
+        <div class="form-section">
+            <h3>Events Calendar</h3>
+            <div id="calendar"></div>
+        </div>
+    </section>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = 'admin-login.html';
+                return;
+            }
+
+            const authHeader = { 'Authorization': `Bearer ${token}` };
+
+            // Load and display announcements, events, and timetable
+            const loadAnnouncements = () => {
+                fetch('/api/announcements')
+                    .then(response => response.json())
+                    .then(data => {
+                        const list = document.getElementById('announcements-list');
+                        list.innerHTML = '<h3>Existing Announcements</h3>';
+                        data.forEach(a => {
+                            const card = document.createElement('div');
+                            card.classList.add('card');
+                            card.innerHTML = `
+                                <div>
+                                    <h4>${a.title}</h4>
+                                    <p>${a.content}</p>
+                                </div>
+                                <div class="card-buttons">
+                                    <button onclick='editAnnouncement(${a.id}, \`${a.title}\`, \`${a.content}\`)'>Edit</button>
+                                    <button onclick="deleteAnnouncement(${a.id})">Delete</button>
+                                </div>
+                            `;
+                            list.appendChild(card);
+                        });
+                    });
+            };
+
+            const loadEvents = () => {
+                fetch('/api/events')
+                    .then(response => response.json())
+                    .then(data => {
+                        const list = document.getElementById('events-list');
+                        list.innerHTML = '<h3>Existing Events</h3>';
+                        data.forEach(e => {
+                            const card = document.createElement('div');
+                            card.classList.add('card');
+                            card.innerHTML = `
+                                <div>
+                                    <h4>${e.title}</h4>
+                                    <p>${e.description}</p>
+                                    <p>Date: ${new Date(e.date).toLocaleDateString()}</p>
+                                </div>
+                                <div class="card-buttons">
+                                    <button onclick='editEvent(${e.id}, \`${e.title}\`, \`${e.description}\`, \`${e.date}\`, \`${e.image || ''}\`)'>Edit</button>
+                                    <button onclick="deleteEvent(${e.id})">Delete</button>
+                                </div>
+                            `;
+                            list.appendChild(card);
+                        });
+                    });
+            };
+
+            const loadCalendar = (events) => {
+                const calendarEl = document.getElementById('calendar');
+                const today = new Date();
+                const month = today.getMonth();
+                const year = today.getFullYear();
+
+                const firstDay = new Date(year, month, 1);
+                const lastDay = new Date(year, month + 1, 0);
+
+                let html = '<table>';
+                html += '<tr><th>Sun</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th></tr>';
+
+                let date = 1;
+                for (let i = 0; i < 6; i++) {
+                    html += '<tr>';
+                    for (let j = 0; j < 7; j++) {
+                        if (i === 0 && j < firstDay.getDay()) {
+                            html += '<td></td>';
+                        } else if (date > lastDay.getDate()) {
+                            break;
+                        } else {
+                            const currentDate = new Date(year, month, date);
+                            let className = '';
+                            const event = events.find(e => new Date(e.date).toDateString() === currentDate.toDateString());
+                            if (event) {
+                                className = 'event';
+                            }
+                            html += `<td class="${className}">${date}</td>`;
+                            date++;
+                        }
+                    }
+                    html += '</tr>';
+                }
+                html += '</table>';
+                calendarEl.innerHTML = html;
+            };
+
+            // Form submissions
+            document.getElementById('announcement-form').addEventListener('submit', e => {
+                e.preventDefault();
+                const id = document.getElementById('announcement-id').value;
+                const title = document.getElementById('announcement-title').value;
+                const content = document.getElementById('announcement-content').value;
+                const method = id ? 'PUT' : 'POST';
+                const url = id ? `/api/announcements/${id}` : '/api/announcements';
+
+                fetch(url, {
+                    method,
+                    headers: { ...authHeader, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title, content })
+                }).then(() => {
+                    document.getElementById('announcement-form').reset();
+                    loadAnnouncements();
+                });
+            });
+
+            document.getElementById('event-form').addEventListener('submit', e => {
+                e.preventDefault();
+                const id = document.getElementById('event-id').value;
+                const title = document.getElementById('event-title').value;
+                const description = document.getElementById('event-description').value;
+                const date = document.getElementById('event-date').value;
+                const image = document.getElementById('event-image').value;
+                const method = id ? 'PUT' : 'POST';
+                const url = id ? `/api/events/${id}` : '/api/events';
+
+                fetch(url, {
+                    method,
+                    headers: { ...authHeader, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title, description, date, image })
+                }).then(() => {
+                    document.getElementById('event-form').reset();
+                    loadEvents();
+                });
+            });
+
+            window.editAnnouncement = (id, title, content) => {
+                document.getElementById('announcement-id').value = id;
+                document.getElementById('announcement-title').value = title;
+                document.getElementById('announcement-content').value = content;
+            };
+
+            window.deleteAnnouncement = id => {
+                fetch(`/api/announcements/${id}`, { method: 'DELETE', headers: authHeader }).then(loadAnnouncements);
+            };
+
+            window.editEvent = (id, title, description, date, image) => {
+                document.getElementById('event-id').value = id;
+                document.getElementById('event-title').value = title;
+                document.getElementById('event-description').value = description;
+                document.getElementById('event-date').value = new Date(date).toISOString().split('T')[0];
+                document.getElementById('event-image').value = image;
+            };
+
+            window.deleteEvent = id => {
+                fetch(`/api/events/${id}`, { method: 'DELETE', headers: authHeader }).then(loadEvents);
+            };
+
+            window.logout = () => {
+                localStorage.removeItem('token');
+                window.location.href = 'admin-login.html';
+            };
+
+            loadAnnouncements();
+            fetch('/api/events')
+                .then(response => response.json())
+                .then(data => {
+                    loadEvents();
+                    loadCalendar(data);
+                });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,24 @@
+{
+  "days": [
+    {
+      "name": "Monday",
+      "slots": ["", "IFT 308", "IFT 308", "", "CIT 302", "CIT 302", "", ""]
+    },
+    {
+      "name": "Tuesday",
+      "slots": ["", "IFT 302", "IFT 302", "", "", "", "", ""]
+    },
+    {
+      "name": "Wednesday",
+      "slots": ["IFT 304", "IFT 304", "", "", "", "", "", ""]
+    },
+    {
+      "name": "Thursday",
+      "slots": ["", "", "", "CIT 306", "CIT 306", "ENS 302", "ENS 302", ""]
+    },
+    {
+      "name": "Friday",
+      "slots": ["IFT 306", "IFT 306", "", "ENS", "CIT 304", "CIT 304", "", ""]
+    }
+  ]
+}

@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>InfoHive</title>
+    <link rel="icon" type="image/png" href="assets/images/Logo.png">
+    <link rel="stylesheet" href="assets/css/style.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" />
+</head>
+<body>
+    <!-- HERO SECTION -->
+    <section class="header">
+        <nav>
+            <a href="index.html"><img src="assets/images/logo.png" alt="InfoHive Logo" /></a>
+            <div class="nav-links" id="navLinks">
+                <i class="fa fa-times" onclick="hideMenu()"></i>
+                <ul>
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="announcements.html">Announcements</a></li>
+                    <li><a href="events.html">Events</a></li>
+                    <li><a href="timetable.html">Timetable</a></li>
+                    <li><a href="admin-login.html" class="hero-btn">Admin</a></li>
+                </ul>
+            </div>
+            <i class="fa fa-bars" onclick="showMenu()"></i>
+        </nav>
+
+        <div class="text-box">
+            <h1>Welcome to InfoHive</h1>
+            <p>Your digital hub for departmental updates, events, and resources.</p>
+            <a href="announcements.html" class="hero-btn">See Latest Updates</a>
+        </div>
+    </section>
+
+    <!-- Announcements Section -->
+    <section class="section">
+        <div class="announcements-header">
+            <h1>Latest Announcements</h1>
+            <a href="announcements.html" class="view-all">View All Announcements</a>
+        </div>
+        <div class="row" id="announcements-container">
+            <!-- Announcements will be loaded here -->
+        </div>
+    </section>
+
+    <!-- Events Section -->
+    <section class="section">
+        <h1>Upcoming Events</h1>
+        <div class="row" id="events-container">
+            <!-- Events will be loaded here -->
+        </div>
+    </section>
+
+    <!-- Timetable Section -->
+    <section class="section timetable">
+        <h2>300L Rain Semester Timetable</h2>
+        <table>
+            <!-- Timetable content remains the same -->
+        </table>
+    </section>
+
+    <!-- Footer -->
+    <section class="footer">
+        <h4>About InfoHive</h4>
+        <p>Your one-stop digital board for all departmental information.</p>
+        <div class="icons">
+            <i class="fab fa-facebook"></i>
+            <i class="fab fa-twitter"></i>
+            <i class="fab fa-instagram"></i>
+            <i class="fab fa-linkedin"></i>
+        </div>
+        <p>Made with by InfoHive Team</p>
+    </section>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            fetch('/api/announcements')
+                .then(response => response.json())
+                .then(data => {
+                    const container = document.getElementById('announcements-container');
+                    data.slice(0, 3).forEach(announcement => {
+                        const col = document.createElement('div');
+                        col.classList.add('col');
+                        col.innerHTML = `
+                            <h3>${announcement.title}</h3>
+                            <p>${announcement.content}</p>
+                        `;
+                        container.appendChild(col);
+                    });
+                });
+
+            fetch('/api/events')
+                .then(response => response.json())
+                .then(data => {
+                    const container = document.getElementById('events-container');
+                    data.slice(0, 3).forEach(event => {
+                        const col = document.createElement('div');
+                        col.classList.add('col');
+                        col.innerHTML = `
+                            <h3>${event.title}</h3>
+                            <p>${event.description}</p>
+                            <p>Date: ${new Date(event.date).toLocaleDateString()}</p>
+                        `;
+                        container.appendChild(col);
+                    });
+                });
+        });
+
+        var navLinks = document.getElementById("navLinks");
+        function showMenu() {
+            navLinks.style.right = "0";
+        }
+        function hideMenu() {
+            navLinks.style.right = "-200px";
+        }
+    </script>
+</body>
+</html>
