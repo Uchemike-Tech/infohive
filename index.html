@@ -91,12 +91,19 @@
         </div>
     </section>
 
-    <!-- Timetable Section -->
-    <section class="section timetable">
-        <h2>300L Rain Semester Timetable</h2>
-        <table>
-            <!-- Timetable content remains the same -->
-        </table>
+    <!-- Timetable Preview Section -->
+    <section class="section">
+        <div class="announcements-header">
+            <h1>Class Timetable</h1>
+            <a href="timetable.html" class="view-all">View Full Timetable</a>
+        </div>
+        <div class="timetable-preview">
+            <div class="timetable-card">
+                <h3>300L Rain Semester Timetable</h3>
+                <p>View your complete class schedule with all course times, locations, and lab sessions.</p>
+                <a href="timetable.html" class="hero-btn">View Timetable</a>
+            </div>
+        </div>
     </section>
 
     <!-- Footer -->
@@ -165,7 +172,11 @@
                     dateDiv.classList.add('calendar-date');
                     
                     const isCurrentMonth = currentDateIter.getMonth() === month;
-                    const isToday = currentDateIter.toDateString() === new Date().toDateString();
+                // Fix timezone issue by comparing dates in local timezone
+                const today = new Date();
+                const isToday = currentDateIter.getFullYear() === today.getFullYear() && 
+                               currentDateIter.getMonth() === today.getMonth() && 
+                               currentDateIter.getDate() === today.getDate();
                     
                     if (!isCurrentMonth) {
                         dateDiv.classList.add('other-month');
@@ -174,8 +185,11 @@
                         dateDiv.classList.add('today');
                     }
 
-                    // Check for events on this date
-                    const dateStr = currentDateIter.toISOString().split('T')[0];
+                    // Check for events on this date - avoid timezone issues
+                    const year = currentDateIter.getFullYear();
+                    const monthStr = String(currentDateIter.getMonth() + 1).padStart(2, '0');
+                    const day = String(currentDateIter.getDate()).padStart(2, '0');
+                    const dateStr = `${year}-${monthStr}-${day}`;
                     const dayEvents = eventsData.filter(event => event.date === dateStr);
                     
                     if (dayEvents.length > 0) {
@@ -197,13 +211,18 @@
             function showEventsForDate(date, events) {
                 const eventsList = document.getElementById('events-list');
                 
+                // Parse the date string properly to avoid timezone issues
+                const [year, month, day] = date.split('-');
+                const displayDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                const formattedDate = displayDate.toLocaleDateString();
+                
                 if (events.length === 0) {
-                    eventsList.innerHTML = `<p class="no-events">No events scheduled for ${new Date(date).toLocaleDateString()}</p>`;
+                    eventsList.innerHTML = `<p class="no-events">No events scheduled for ${formattedDate}</p>`;
                     return;
                 }
 
                 eventsList.innerHTML = `
-                    <h3>Events for ${new Date(date).toLocaleDateString()}</h3>
+                    <h3>Events for ${formattedDate}</h3>
                     ${events.map(event => `
                         <div class="event-card">
                             <h4>${event.title}</h4>
